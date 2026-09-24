@@ -1,0 +1,6 @@
+# Create solution and projects
+dotnet new sln -n TcpSocketSolution
+dotnet new blazorserver -o TcpBlazorApp
+dotnet new console -o TcpClientSample
+dotnet sln add TcpBlazorApp/TcpBlazorApp.csproj
+dotnet sln add TcpClientSample/TcpClientSample.csproj

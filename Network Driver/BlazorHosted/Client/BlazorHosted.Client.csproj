@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+  <PropertyGroup>
+	<TargetFramework>net11</TargetFramework>
+	<RootNamespace>BlazorHosted.Client</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+	<ProjectReference Include="..\Shared\BlazorHosted.Shared.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+	<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.0" />
+	<PackageReference Include="System.Net.Http.Json" Version="8.0.0" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,53 @@
+@page "/"
+@inject HttpClient Http
+
+<h1>Blazor Hosted Client</h1>
+
+<p>Type a message and send it to the server API. The server will echo the message back.</p>
+
+<input @bind="input" placeholder="Message" />
+<button @onclick="Send">Send</button>
+
+@if (messages != null && messages.Count > 0)
+{
+	<h3>Messages</h3>
+	<ul>
+		@foreach (var m in messages)
+		{
+			<li>@m.Timestamp.ToLocalTime().ToString("s") - @m.Text</li>
+		}
+	</ul>
+}
+
+@code {
+	private string input = string.Empty;
+	private List<BlazorHosted.Shared.Message> messages = new();
+
+	protected override async Task OnInitializedAsync()
+	{
+		try
+		{
+			var result = await Http.GetFromJsonAsync<List<BlazorHosted.Shared.Message>>("api/messages");
+			if (result != null)
+				messages = result;
+		}
+		catch { }
+	}
+
+	private async Task Send()
+	{
+		if (string.IsNullOrWhiteSpace(input))
+			return;
+
+		var resp = await Http.PostAsJsonAsync("api/messages", new BlazorHosted.Shared.Message { Text = input });
+		if (resp.IsSuccessStatusCode)
+		{
+			var echoed = await resp.Content.ReadFromJsonAsync<BlazorHosted.Shared.Message>();
+			if (echoed != null)
+			{
+				messages.Insert(0, echoed);
+				input = string.Empty;
+			}
+		}
+	}
+}

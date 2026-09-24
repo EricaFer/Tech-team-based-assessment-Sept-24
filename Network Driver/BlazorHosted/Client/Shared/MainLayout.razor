@@ -1,0 +1,19 @@
+@inherits LayoutComponentBase
+
+<div class="page">
+	<div class="sidebar">
+		<h3>Blazor Hosted</h3>
+		<nav>
+			<a href="/">Home</a>
+		</nav>
+	</div>
+	<div class="main">
+		@Body
+	</div>
+</div>
+
+<style>
+	.page { display:flex; }
+	.sidebar { width:200px; padding:10px; background:#f3f3f3 }
+	.main { flex:1; padding:10px }
+</style>
