@@ -1,3 +1,6 @@
 <Solution>
+  <Project Path="BlazorHosted/Client/BlazorHosted.Client.csproj" />
+  <Project Path="BlazorHosted/Shared/BlazorHosted.Shared.csproj" />
+  <Project Path="TcpBlazor/TcpBlazor.csproj" />
   <Project Path="TcpClientSample/TcpClientSample.csproj" />
 </Solution>
