@@ -1,9 +1,37 @@
-# Tech Team-Based Assessment — September 2024
+# EOL Quality Command Center
 
-Welcome! This repository is your shared workspace for the team-based technical assessment.
+A Siemens-style industrial dashboard for monitoring battery-module assembly end-of-line quality. The application calculates first-time quality (FTQ), highlights defects and station performance, and provides unit-level test traceability.
 
-## What is this repo for?
+## Run locally
 
-This is where your team will collaborate and commit code as part of the assessment. Feel free to create branches, open pull requests, and work together however suits your team best.
+Requires Node.js 20 or newer.
 
-Have fun and good luck!
+```bash
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173`. The Express simulation API runs on `http://localhost:4173`.
+
+## Simulation
+
+Use **Run simulation** on the dashboard to add a new production cycle. Three profiles are available:
+
+- **Nominal** — approximately 94% expected FTQ
+- **Stressed** — approximately 72% expected FTQ
+- **Recovery** — approximately 98% expected FTQ
+
+Simulation data is held in memory. **Reset** restores the original records from `eol_test_results_mock_sample.csv`.
+
+## Commands
+
+- `npm run dev` — start the dashboard and API in watch mode
+- `npm run build` — type-check and create a production build
+- `npm start` — serve the API and built dashboard
+- `npm test` — run automated tests
+
+FTQ is calculated as:
+
+```text
+first-pass units / total tested units × 100
+```
