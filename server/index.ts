@@ -7,6 +7,7 @@ import Papa from "papaparse";
 import type {
   DashboardData,
   DefectMetric,
+  EolAlarm,
   EolRecord,
   FailureCode,
   SimulationProfile,
@@ -22,6 +23,35 @@ const DEFECT_META = {
   CAP_LOW: { label: "Low capacity", processArea: "Electrode manufacturing" },
   IR_HIGH: { label: "High internal resistance", processArea: "Cell assembly" },
   TEMP_HIGH: { label: "Abnormal heat generation", processArea: "Formation & testing" },
+} as const;
+const ALARM_RULES = {
+  CAP_LOW: {
+    severity: "MAJOR",
+    measurement_name: "capacity_ah",
+    limit_value: 300,
+    limit_operator: ">=",
+    unit: "Ah",
+    recommendation:
+      "Quarantine the module and associated cell lot. Verify electrode coating uniformity, active-material loading, and capacity-test calibration before releasing the lot.",
+  },
+  IR_HIGH: {
+    severity: "MAJOR",
+    measurement_name: "internal_resistance_mohm",
+    limit_value: 0.55,
+    limit_operator: "<=",
+    unit: "mΩ",
+    recommendation:
+      "Contain the module and inspect cell interconnects, weld integrity, electrolyte wetting, and contact resistance. Review the cell-assembly process history for the affected lot.",
+  },
+  TEMP_HIGH: {
+    severity: "CRITICAL",
+    measurement_name: "temperature_c",
+    limit_value: 30,
+    limit_operator: "<=",
+    unit: "°C",
+    recommendation:
+      "Place the module in an immediate safety hold. Inspect for internal micro-shorts, abnormal formation current, cooling performance, and thermal-sensor calibration before retest.",
+  },
 } as const;
 
 function loadSeedData(): EolRecord[] {
@@ -57,6 +87,39 @@ let simulationRuns = 0;
 const round = (value: number, digits = 1) => Number(value.toFixed(digits));
 const average = (values: number[]) =>
   values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+
+export function buildAlarms(source: EolRecord[]): EolAlarm[] {
+  return source
+    .filter(
+      (record): record is EolRecord & { failure_code: Exclude<FailureCode, ""> } =>
+        record.result === "FAIL" && record.failure_code !== "",
+    )
+    .map((record) => {
+      const rule = ALARM_RULES[record.failure_code];
+      return {
+        alarm_id: `ALM-${record.test_id}`,
+        test_id: record.test_id,
+        detected_at: new Date(record.timestamp.replace(" ", "T")).toISOString(),
+        station_id: record.station_id,
+        module_serial: record.module_serial,
+        cell_lot: record.cell_lot,
+        failure_code: record.failure_code,
+        severity: rule.severity,
+        status: "ACTIVE" as const,
+        title: DEFECT_META[record.failure_code].label,
+        process_area: DEFECT_META[record.failure_code].processArea,
+        measurement_name: rule.measurement_name,
+        measured_value: record[rule.measurement_name],
+        limit_value: rule.limit_value,
+        limit_operator: rule.limit_operator,
+        unit: rule.unit,
+        recommendation: rule.recommendation,
+      };
+    })
+    .sort(
+      (a, b) => new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime(),
+    );
+}
 
 export function buildDashboardData(source: EolRecord[]): DashboardData {
   const passed = source.filter((record) => record.result === "PASS").length;
@@ -129,6 +192,7 @@ export function buildDashboardData(source: EolRecord[]): DashboardData {
     defects,
     trend,
     records: ordered.reverse(),
+    alarms: buildAlarms(source),
     lastUpdated: new Date().toISOString(),
     simulationRuns,
   };
@@ -189,6 +253,15 @@ app.get("/api/health", (_request, response) => {
 
 app.get("/api/dashboard", (_request, response) => {
   response.json(buildDashboardData(records));
+});
+
+app.get("/api/alarms", (_request, response) => {
+  const alarms = buildAlarms(records);
+  response.json({
+    active_count: alarms.length,
+    critical_count: alarms.filter((alarm) => alarm.severity === "CRITICAL").length,
+    alarms,
+  });
 });
 
 app.post("/api/simulate", (request, response) => {

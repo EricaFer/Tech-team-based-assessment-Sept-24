@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
+  ArrowRight,
   BatteryCharging,
+  BellRing,
   CheckCircle2,
   ChevronDown,
   CircleStop,
@@ -26,8 +28,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { AlarmPage } from "./AlarmPage";
 import type {
   DashboardData,
+  EolAlarm,
   EolRecord,
   SimulationProfile,
   StationMetric,
@@ -55,6 +59,65 @@ function formatDate(timestamp: string) {
     day: "2-digit",
     year: "numeric",
   }).format(new Date(timestamp));
+}
+
+function Topbar() {
+  return (
+    <header className="topbar">
+      <div className="brand">
+        <div className="brand__mark">S</div>
+        <div>
+          <strong>Industrial Quality Intelligence</strong>
+          <span>Battery Assembly · End of Line</span>
+        </div>
+      </div>
+      <div className="topbar__context">
+        <div className="plant-select">
+          <Factory size={17} />
+          <span>
+            <small>PLANT</small>
+            Factory 01 · Battery Module
+          </span>
+          <ChevronDown size={15} />
+        </div>
+        <div className="live-status">
+          <span />
+          LINE CONNECTED
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function AlarmBanner({
+  alarms,
+  onOpen,
+}: {
+  alarms: EolAlarm[];
+  onOpen: () => void;
+}) {
+  if (!alarms.length) return null;
+  const criticalCount = alarms.filter((alarm) => alarm.severity === "CRITICAL").length;
+  const latest = alarms[0];
+
+  return (
+    <button className="alarm-banner" onClick={onOpen}>
+      <span className="alarm-banner__pulse">
+        <BellRing size={18} />
+      </span>
+      <span className="alarm-banner__copy">
+        <strong>{alarms.length} active EOL test {alarms.length === 1 ? "alarm" : "alarms"}</strong>
+        <small>
+          Latest: {latest.failure_code} at {latest.station_id} · {formatTime(latest.detected_at)}
+          {criticalCount > 0 && ` · ${criticalCount} critical`}
+        </small>
+      </span>
+      <span className="alarm-banner__action">
+        Review alarms
+        <ArrowRight size={16} />
+      </span>
+    </button>
+  );
 }
 
 function FtqGauge({ value, target }: { value: number; target: number }) {
@@ -249,6 +312,7 @@ export default function App() {
   const [isSimulating, setIsSimulating] = useState(false);
   const [profile, setProfile] = useState<SimulationProfile>("nominal");
   const [count, setCount] = useState(12);
+  const [route, setRoute] = useState(window.location.pathname);
 
   async function loadDashboard() {
     try {
@@ -264,6 +328,18 @@ export default function App() {
   useEffect(() => {
     void loadDashboard();
   }, []);
+
+  useEffect(() => {
+    const handleNavigation = () => setRoute(window.location.pathname);
+    window.addEventListener("popstate", handleNavigation);
+    return () => window.removeEventListener("popstate", handleNavigation);
+  }, []);
+
+  function navigate(pathname: string) {
+    window.history.pushState({}, "", pathname);
+    setRoute(pathname);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   async function runSimulation() {
     setIsSimulating(true);
@@ -323,6 +399,19 @@ export default function App() {
     );
   }
 
+  if (route === "/alarms") {
+    return (
+      <div className="app-shell">
+        <Topbar />
+        <AlarmPage alarms={data.alarms} onBack={() => navigate("/")} />
+        <footer>
+          <span>Industrial Quality Intelligence · Alarm service</span>
+          <span>Data source: EOL battery test bench</span>
+        </footer>
+      </div>
+    );
+  }
+
   const { summary } = data;
   const latest = data.records[0];
   const topDefect = data.defects[0];
@@ -330,31 +419,10 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <header className="topbar">
-        <div className="brand">
-          <div className="brand__mark">S</div>
-          <div>
-            <strong>Industrial Quality Intelligence</strong>
-            <span>Battery Assembly · End of Line</span>
-          </div>
-        </div>
-        <div className="topbar__context">
-          <div className="plant-select">
-            <Factory size={17} />
-            <span>
-              <small>PLANT</small>
-              Factory 01 · Battery Module
-            </span>
-            <ChevronDown size={15} />
-          </div>
-          <div className="live-status">
-            <span />
-            LINE CONNECTED
-          </div>
-        </div>
-      </header>
+      <Topbar />
 
       <main>
+        <AlarmBanner alarms={data.alarms} onOpen={() => navigate("/alarms")} />
         <section className="page-heading">
           <div>
             <div className="breadcrumb">QUALITY / ASSEMBLY / END OF LINE</div>

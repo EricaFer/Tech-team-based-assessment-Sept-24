@@ -23,6 +23,14 @@ Use **Run simulation** on the dashboard to add a new production cycle. Three pro
 
 Simulation data is held in memory. **Reset** restores the original records from `eol_test_results_mock_sample.csv`.
 
+## Alarm service
+
+Every failed EOL test generates an active alarm containing the test timestamp, failure code, station, measured value, acceptance limit, and recommended containment action.
+
+- `GET /api/alarms` — retrieve active alarms
+- `/alarms` — open the alarm investigation view
+- `schemas/eol-alarm.schema.json` — JSON Schema for alarm integrations
+
 ## Commands
 
 - `npm run dev` — start the dashboard and API in watch mode

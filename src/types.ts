@@ -1,6 +1,7 @@
 export type TestResult = "PASS" | "FAIL";
 export type FailureCode = "" | "CAP_LOW" | "IR_HIGH" | "TEMP_HIGH";
 export type SimulationProfile = "nominal" | "stressed" | "recovery";
+export type AlarmSeverity = "MAJOR" | "CRITICAL";
 
 export interface EolRecord {
   test_id: string;
@@ -53,12 +54,33 @@ export interface TrendPoint {
   tests: number;
 }
 
+export interface EolAlarm {
+  alarm_id: string;
+  test_id: string;
+  detected_at: string;
+  station_id: string;
+  module_serial: string;
+  cell_lot: string;
+  failure_code: Exclude<FailureCode, "">;
+  severity: AlarmSeverity;
+  status: "ACTIVE";
+  title: string;
+  process_area: string;
+  measurement_name: "capacity_ah" | "internal_resistance_mohm" | "temperature_c";
+  measured_value: number;
+  limit_value: number;
+  limit_operator: ">=" | "<=";
+  unit: "Ah" | "mΩ" | "°C";
+  recommendation: string;
+}
+
 export interface DashboardData {
   summary: Summary;
   stations: StationMetric[];
   defects: DefectMetric[];
   trend: TrendPoint[];
   records: EolRecord[];
+  alarms: EolAlarm[];
   lastUpdated: string;
   simulationRuns: number;
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { EolRecord } from "../src/types";
-import { buildDashboardData } from "./index";
+import { buildAlarms, buildDashboardData } from "./index";
 
 const records: EolRecord[] = [
   {
@@ -56,5 +56,25 @@ describe("buildDashboardData", () => {
       count: 1,
       percentage: 100,
     });
+  });
+
+  it("creates actionable alarms for failed tests", () => {
+    const alarms = buildAlarms(records);
+
+    expect(alarms).toHaveLength(1);
+    expect(alarms[0]).toMatchObject({
+      alarm_id: "ALM-T2",
+      test_id: "T2",
+      station_id: "EOL-01",
+      failure_code: "CAP_LOW",
+      severity: "MAJOR",
+      measurement_name: "capacity_ah",
+      measured_value: 298,
+      limit_value: 300,
+      limit_operator: ">=",
+      unit: "Ah",
+      status: "ACTIVE",
+    });
+    expect(alarms[0].recommendation).toContain("Quarantine");
   });
 });
